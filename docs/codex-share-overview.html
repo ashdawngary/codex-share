@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>codex-share · product walkthrough</title>
+  <style>
+    :root { --bg:#0b0b0d; --panel:#121216; --panel2:#18181d; --line:#2a2a31; --muted:#8c8c96; --text:#f1f1f4; --accent:#9585ff; --green:#60ce91; --warn:#e8b76c; --red:#e87979; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(circle at 50% -20%,#25203f 0,transparent 38%),var(--bg); color:var(--text); font:15px/1.45 var(--sans); }
+    .page { width:min(1120px,calc(100% - 32px)); margin:0 auto; padding:72px 0 96px; }
+    .eyebrow { color:var(--accent); font:12px var(--mono); letter-spacing:.1em; text-transform:uppercase; }
+    h1 { max-width:800px; margin:12px 0 16px; font-size:clamp(38px,6vw,68px); letter-spacing:-.055em; line-height:1; }
+    .lead { max-width:650px; margin:0; color:#b7b7c0; font-size:18px; }
+    .legend { display:flex; flex-wrap:wrap; gap:8px; margin:30px 0 58px; }
+    .chip { display:inline-flex; gap:7px; align-items:center; border:1px solid var(--line); border-radius:999px; padding:7px 10px; background:#111116; color:#bdbdc5; font:11px var(--mono); }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); } .dot.green{background:var(--green)} .dot.warn{background:var(--warn)}
+    .flow { display:grid; gap:18px; }
+    .step { display:grid; grid-template-columns:72px minmax(0,1fr); gap:20px; align-items:start; padding:28px 0; border-top:1px solid var(--line); }
+    .number { color:var(--muted); font:13px var(--mono); padding-top:4px; }
+    h2 { margin:0 0 6px; font-size:24px; letter-spacing:-.03em; }
+    .description { margin:0 0 20px; color:var(--muted); max-width:680px; }
+    .demo { overflow:hidden; border:1px solid var(--line); border-radius:14px; background:linear-gradient(145deg,#16161c,#101014); box-shadow:0 18px 60px #0004; }
+    .bar { height:43px; display:flex; align-items:center; gap:7px; padding:0 14px; border-bottom:1px solid var(--line); color:#b4b4bd; font:11px var(--mono); }
+    .lights { display:flex; gap:5px; margin-right:8px; } .lights i{width:8px;height:8px;border-radius:50%;background:#3b3b44}.lights i:first-child{background:#e87876}.lights i:nth-child(2){background:#e8bd6c}.lights i:last-child{background:#64c88d}
+    .picker { padding:20px; }
+    .picker-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-weight:600; }
+    .picker-sub { color:var(--muted); font:12px var(--mono); }
+    .thread { display:grid; grid-template-columns:35px 1fr auto; gap:12px; align-items:center; padding:13px; border-top:1px solid var(--line); transition:.18s ease; }
+    .thread:first-of-type { border:1px solid #554d8c; border-radius:8px; background:#201e2d; }
+    .thread:hover { background:#1b1b21; }
+    .thread .num { color:var(--accent); font:12px var(--mono); }
+    .thread strong { display:block; font:13px var(--mono); font-weight:500; } .thread span { display:block; overflow:hidden; color:var(--muted); font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
+    .thread time { color:var(--muted); font:11px var(--mono); white-space:nowrap; }
+    .chooser { display:flex; gap:10px; align-items:center; margin-top:18px; padding:11px 12px; border:1px solid var(--line); border-radius:7px; background:#0e0e12; font:12px var(--mono); }
+    .caret { color:var(--accent); }
+    .projection { display:grid; grid-template-columns:1fr 70px 1fr; gap:14px; align-items:stretch; padding:20px; }
+    .data-box { min-width:0; border:1px solid var(--line); border-radius:9px; padding:14px; background:#0e0e12; }
+    .data-box h3 { margin:0 0 11px; font:12px var(--mono); font-weight:500; color:#c5c5ce; }
+    .line { overflow:hidden; padding:5px 0; color:#8f8f99; font:11px/1.4 var(--mono); text-overflow:ellipsis; white-space:nowrap; }
+    .line.bad { color:#dc8080; text-decoration:line-through; text-decoration-color:#dc808088; } .line.good { color:#b9b9c2; } .line.good b { color:var(--green); font-weight:500; }
+    .arrow { display:grid; place-items:center; color:var(--accent); font:24px var(--mono); }
+    .permission { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    button { border:1px solid var(--line); border-radius:7px; padding:8px 10px; background:var(--panel2); color:#c3c3cc; cursor:pointer; font:11px var(--mono); } button:hover { border-color:#5d5788; color:white; } button.active { border-color:var(--accent); background:#28253d; color:#d7d2ff; }
+    .viewer { display:grid; grid-template-columns:minmax(0,1fr) 224px; min-height:425px; }
+    .chat { position:relative; padding:18px 22px 58px 45px; background:#101014; }
+    .rail { position:absolute; top:25px; bottom:24px; left:20px; width:1px; background:var(--line); }
+    .msg { position:relative; margin:0 0 13px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#15151a; }
+    .msg::before,.thinking::before { position:absolute; z-index:2; left:-30px; top:15px; width:7px; height:7px; border:2px solid #101014; border-radius:2px; background:#8290a8; box-shadow:0 0 0 1px var(--line); content:""; }
+    .msg.codex::before,.thinking::before { background:var(--accent); }
+    .msg-head { display:flex; justify-content:space-between; padding:9px 12px; border-bottom:1px solid var(--line); color:#bfbfc8; font:11px var(--mono); } .msg-head time { color:#777782; }
+    .msg-body { padding:12px; color:#dbdbe1; font-size:13px; }
+    .thinking { position:relative; display:flex; align-items:center; gap:9px; min-height:38px; padding:0 12px; border:1px solid var(--line); border-radius:8px; color:#b8b8c2; font-size:12px; }
+    .dots { display:flex; gap:3px; } .dots i { width:4px; height:4px; border-radius:50%; background:var(--accent); animation:pulse 1.2s infinite; } .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}@keyframes pulse{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}
+    .side { padding:18px; border-left:1px solid var(--line); background:#141419; }
+    .side h3 { margin:0 0 12px; font-size:12px; font-weight:500; } .mode { display:flex; align-items:center; gap:8px; margin:9px 0; color:#8e8e99; font:11px var(--mono); } .mode i { width:8px;height:8px;border-radius:2px;background:#454550; } .mode.allowed i { background:var(--green); } .mode.allowed { color:#c1c1cb; }
+    .follow { position:absolute; right:17px; bottom:16px; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:#1e1d28; color:#cecaff; font:10px var(--mono); }
+    .architecture { display:grid; grid-template-columns:repeat(5,1fr); align-items:center; gap:8px; padding:28px 20px; }
+    .node { min-height:82px; display:grid; align-content:center; gap:7px; padding:12px; border:1px solid var(--line); border-radius:9px; background:#121217; text-align:center; } .node strong { font-size:12px; font-weight:500; } .node span { color:var(--muted); font:10px var(--mono); } .node.safe { border-color:#31533e; } .architecture .arrow { font-size:17px; }
+    .foot { margin:42px 0 0 92px; color:var(--muted); font-size:13px; } code { color:#cfcafc; font-family:var(--mono); }
+    @media (max-width:720px) { .page{width:min(100% - 22px,1120px);padding-top:42px}.step{grid-template-columns:1fr;gap:9px}.number{padding:0}.projection{grid-template-columns:1fr}.projection .arrow{height:32px;transform:rotate(90deg)}.viewer{grid-template-columns:1fr}.side{border-top:1px solid var(--line);border-left:0}.architecture{grid-template-columns:1fr}.architecture .arrow{height:24px;transform:rotate(90deg)}.foot{margin-left:0}.thread{grid-template-columns:28px 1fr}.thread time{grid-column:2}.lead{font-size:16px} }
+    @media (prefers-reduced-motion:reduce){.dots i{animation:none}.thread{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow">codex-share / product walkthrough</div>
+    <h1>A private local thread becomes a controlled live view.</h1>
+    <p class="lead">Pick a Codex conversation, deliberately choose what it can expose, then share a read-only live link while the host continues working normally.</p>
+    <div class="legend"><span class="chip"><i class="dot"></i>local host</span><span class="chip"><i class="dot green"></i>safe to share</span><span class="chip"><i class="dot warn"></i>permission-dependent</span></div>
+
+    <section class="flow" aria-label="codex-share walkthrough">
+      <article class="step"><div class="number">01</div><div><h2>Choose the right conversation</h2><p class="description">The terminal picker makes the recent session list legible, so sharing begins with an explicit choice rather than an opaque file path.</p><div class="demo"><div class="bar"><span class="lights"><i></i><i></i><i></i></span>codex-share</div><div class="picker"><div class="picker-title"><span>Choose a Codex thread to share</span><span class="picker-sub">recent 12</span></div><div class="thread"><div class="num">01</div><div><strong>019d…e81</strong><span>Make the shared thread easier to follow</span></div><time>3m ago</time></div><div class="thread"><div class="num">02</div><div><strong>019d…4a2</strong><span>Investigate the deployment error</span></div><time>1h ago</time></div><div class="thread"><div class="num">03</div><div><strong>019d…17b</strong><span>Draft the onboarding architecture</span></div><time>Yesterday</time></div><div class="chooser"><span class="caret">›</span><span>Select a thread [1–12]:</span><strong>1</strong></div></div></div></div></article>
+
+      <article class="step"><div class="number">02</div><div><h2>Project only what the link permits</h2><p class="description">The browser never receives raw rollout JSONL. Try the scopes below to see the public event shape change.</p><div class="demo"><div class="bar"><span class="lights"><i></i><i></i><i></i></span>local projection boundary</div><div class="projection"><div class="data-box"><h3>Raw local rollout</h3><div class="line good">user: “Improve sharing UI”</div><div class="line bad">tool arguments: cat /private/…</div><div class="line bad">command output: API_KEY=…</div><div class="line bad">reasoning: encrypted_content</div><div class="line good">patch_apply_end: changes</div></div><div class="arrow" aria-hidden="true">→</div><div class="data-box"><h3 id="public-title">Public share feed</h3><div class="line good">message: “Improve sharing UI”</div><div class="line good"><b>status:</b> working</div><div class="line permission-line" data-type="activity">activity: exec · started</div><div class="line permission-line" data-type="diff">diff: src/web.rs</div></div></div><div class="permission" aria-label="Preview a share permission"><button class="scope active" data-mode="conversation" type="button">conversation</button><button class="scope" data-mode="activity" type="button">+ activity</button><button class="scope" data-mode="diffs" type="button">+ diffs</button><button class="scope" data-mode="activity-diffs" type="button">activity + diffs</button></div></div></div></article>
+
+      <article class="step"><div class="number">03</div><div><h2>Follow the work without mistaking silence for completion</h2><p class="description">The viewer starts at the newest message, follows live events only while it is at the bottom, and makes the active turn visible.</p><div class="demo viewer"><div class="chat"><div class="rail"></div><div class="msg"><div class="msg-head"><span>You</span><time>10:42 AM</time></div><div class="msg-body">Can we make the sharing experience clearer?</div></div><div class="msg codex"><div class="msg-head"><span>Codex</span><time>10:42 AM</time></div><div class="msg-body">I’m adding an interactive thread picker and protecting the public feed.</div></div><div class="thinking"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Codex is working</span></div><div class="follow">Following latest ↓</div></div><aside class="side"><h3>Link scope</h3><div class="mode allowed"><i></i><span>Messages</span></div><div class="mode allowed"><i></i><span>Working state</span></div><div class="mode" id="viewer-activity"><i></i><span>Tool activity</span></div><div class="mode" id="viewer-diff"><i></i><span>File diffs</span></div><hr><div class="mode"><i></i><span>Tool arguments</span></div><div class="mode"><i></i><span>Command output</span></div><div class="mode"><i></i><span>Reasoning</span></div></aside></div></div></article>
+
+      <article class="step"><div class="number">04</div><div><h2>Expose the local view only when needed</h2><p class="description">The process serves the UI locally; an optional tunnel turns the authenticated, read-only link into a shareable endpoint.</p><div class="demo"><div class="architecture"><div class="node"><strong>Codex</strong><span>rollout JSONL</span></div><div class="arrow">→</div><div class="node safe"><strong>codex-share</strong><span>mask + permission</span></div><div class="arrow">→</div><div class="node"><strong>tunnel</strong><span>optional</span></div><div class="arrow">→</div><div class="node safe"><strong>viewer</strong><span>read-only browser</span></div></div></div></div></article>
+    </section>
+    <p class="foot">A share URL is capability-scoped, read-only, and expires when <code>codex-share</code> exits.</p>
+  </main>
+  <script>
+    const buttons = [...document.querySelectorAll('.scope')];
+    const activityLine = document.querySelector('[data-type="activity"]');
+    const diffLine = document.querySelector('[data-type="diff"]');
+    const viewerActivity = document.querySelector('#viewer-activity');
+    const viewerDiff = document.querySelector('#viewer-diff');
+    const publicTitle = document.querySelector('#public-title');
+    function setMode(mode) {
+      const activity = mode === 'activity' || mode === 'activity-diffs';
+      const diffs = mode === 'diffs' || mode === 'activity-diffs';
+      buttons.forEach(button => button.classList.toggle('active', button.dataset.mode === mode));
+      activityLine.hidden = !activity; diffLine.hidden = !diffs;
+      viewerActivity.classList.toggle('allowed', activity); viewerDiff.classList.toggle('allowed', diffs);
+      publicTitle.textContent = mode === 'conversation' ? 'Public share feed' : `Public share feed · ${mode}`;
+    }
+    buttons.forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
+    setMode('conversation');
+  </script>
+</body>
+</html>

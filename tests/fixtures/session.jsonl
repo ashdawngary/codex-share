@@ -1,0 +1,7 @@
+{"timestamp":"2026-10-01T12:00:00Z","type":"session_meta","payload":{"id":"thread-test","base_instructions":"NEVER PUBLISH THIS","cwd":"/Users/example/private"}}
+{"timestamp":"2026-10-01T12:00:01Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Please check api_key=supersecret"}]}}
+{"timestamp":"2026-10-01T12:00:02Z","type":"response_item","payload":{"type":"reasoning","encrypted_content":"PRIVATE REASONING","summary":[]}}
+{"timestamp":"2026-10-01T12:00:03Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"cat /private/file"}}
+{"timestamp":"2026-10-01T12:00:04Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call-1","output":"PRIVATE COMMAND OUTPUT"}}
+{"timestamp":"2026-10-01T12:00:04Z","type":"event_msg","payload":{"type":"patch_apply_end","success":true,"stdout":"PRIVATE COMMAND OUTPUT","stderr":"","changes":{"src/example.rs":{"type":"update","unified_diff":"@@ -1 +1 @@\n-old value\n+new value\n","move_path":null}}}}
+{"timestamp":"2026-10-01T12:00:05Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"The check is complete."}]}}
