@@ -15,6 +15,7 @@ use axum::{
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use futures_util::StreamExt;
+use include_dir::{include_dir, Dir};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use tokio::sync::watch;
@@ -82,6 +83,15 @@ struct SnapshotPage {
     is_working: bool,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ShareMeta {
+    source: String,
+    permission: &'static str,
+    activity_allowed: bool,
+    diffs_allowed: bool,
+}
+
 #[derive(Clone)]
 pub struct ShareGrant {
     token: String,
@@ -121,9 +131,11 @@ pub fn router(
     Router::new()
         .route("/healthz", get(|| async { StatusCode::OK }))
         .route("/s/{token}", get(index))
+        .route("/s/{token}/meta", get(meta))
         .route("/s/{token}/snapshot", get(snapshot))
         .route("/s/{token}/events", get(events))
         .route("/s/{token}/events/ws", get(events_ws))
+        .route("/assets/{*path}", get(asset))
         .with_state(AppState {
             feed,
             source: source
@@ -158,27 +170,48 @@ async fn index(Path(candidate): Path<String>, State(state): State<AppState>) -> 
     if !authorized(&candidate, &state.grant) {
         return StatusCode::NOT_FOUND.into_response();
     }
-    let page = INDEX
-        .replace("__TOKEN__", &candidate)
-        .replace("__SOURCE__", &escape_html(&state.source))
-        .replace("__PERMISSION__", state.grant.permission.label())
-        .replace(
-            "__ACTIVITY_ALLOWED__",
-            if state.grant.permission.includes_activity() {
-                "true"
-            } else {
-                "false"
-            },
-        )
-        .replace(
-            "__DIFFS_ALLOWED__",
-            if state.grant.permission.includes_diffs() {
-                "true"
-            } else {
-                "false"
-            },
-        );
-    secure(Html(page)).into_response()
+    let Some(index) = WEB_DIST.get_file("index.html") else {
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    };
+    secure(Html(index.contents_utf8().unwrap_or_default())).into_response()
+}
+
+async fn meta(Path(candidate): Path<String>, State(state): State<AppState>) -> Response {
+    if !authorized(&candidate, &state.grant) {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+    secure(Json(ShareMeta {
+        source: state.source,
+        permission: state.grant.permission.label(),
+        activity_allowed: state.grant.permission.includes_activity(),
+        diffs_allowed: state.grant.permission.includes_diffs(),
+    }))
+    .into_response()
+}
+
+async fn asset(Path(path): Path<String>) -> Response {
+    let Some(file) = WEB_DIST.get_file(format!("assets/{path}")) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let content_type = match file.path().extension().and_then(|value| value.to_str()) {
+        Some("css") => "text/css; charset=utf-8",
+        Some("js") => "text/javascript; charset=utf-8",
+        Some("svg") => "image/svg+xml",
+        Some("wasm") => "application/wasm",
+        _ => "application/octet-stream",
+    };
+    let mut response = file.contents().to_vec().into_response();
+    let headers = response.headers_mut();
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age=31536000, immutable"),
+    );
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
 }
 
 async fn snapshot(
@@ -316,20 +349,11 @@ fn secure<T: IntoResponse>(value: T) -> Response {
         HeaderValue::from_static("nosniff"),
     );
     headers.insert("x-accel-buffering", HeaderValue::from_static("no"));
-    headers.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"));
+    headers.insert(header::CONTENT_SECURITY_POLICY, HeaderValue::from_static("default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; connect-src 'self'; img-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"));
     response
 }
 
-fn escape_html(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
-}
-
-const INDEX: &str = include_str!("../static/index.html");
+static WEB_DIST: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/web/dist");
 
 #[cfg(test)]
 mod tests {

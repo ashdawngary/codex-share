@@ -101,3 +101,15 @@ Permissions are enforced by the server for both the snapshot and live WebSocket 
 Share tokens have 192 bits of entropy, live in the URL path, are checked by the local server, and expire when the process exits. The server binds to `127.0.0.1:48123` by default.
 
 This is defense in depth, not a guarantee that arbitrary prose contains no sensitive information. Review what the agent is discussing before sharing it.
+
+## Development
+
+The React viewer is built with Vite and checked into `web/dist` so building or installing the Rust binary does not require Node.js. When changing the viewer, rebuild the embedded assets before compiling Rust:
+
+```console
+cd web
+npm ci
+npm run build
+cd ..
+cargo test
+```
