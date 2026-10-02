@@ -6,13 +6,57 @@ Share a masked, read-only live view of a local Codex thread. The host continues 
 
 ## Quick start
 
-Install the [Rust toolchain](https://www.rust-lang.org/tools/install), then run:
+Install the [Rust toolchain](https://www.rust-lang.org/tools/install) and one tunnel provider:
+
+- [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) (`cloudflared`) for a no-account Quick Tunnel.
+- [ngrok](https://ngrok.com/download) (`ngrok`) if you have configured an authtoken.
+
+Confirm that the provider is available before starting a share:
+
+```console
+cargo run --release -- --check-tunnels
+```
+
+Then create a public share. This opens the interactive thread picker:
+
+```console
+cargo run --release -- --tunnel cloudflare
+```
+
+Or use ngrok:
+
+```console
+cargo run --release -- --tunnel ngrok
+```
+
+Select a recent thread and `codex-share` prints an authenticated public URL. The share ends when the process exits.
+
+## Sharing permissions
+
+Conversation-only is the default. Grant only the additional information a viewer needs:
+
+| Permission | Viewer can see |
+| --- | --- |
+| `conversation` | User and assistant messages, plus a coarse working/idle indicator. |
+| `activity` | Conversation plus tool names and started/completed state. |
+| `diffs` | Conversation plus masked file paths and patch content. |
+| `activity-diffs` | Conversation, activity, and diffs. |
+
+```console
+cargo run --release -- --tunnel cloudflare --permission activity
+cargo run --release -- --tunnel cloudflare --permission diffs
+cargo run --release -- --tunnel cloudflare --permission activity-diffs
+```
+
+No permission exposes command output, tool arguments, environment/configuration, internal instructions, or reasoning. Diffs are capped at 100 files and 256 KiB per event.
+
+## Other configuration
+
+Run without a tunnel for a local-only share:
 
 ```console
 cargo run --release
 ```
-
-`codex-share` opens an interactive picker of recent threads, showing each thread ID, relative time, and first user-message preview. Select a number to create a share link, or enter `q` to cancel.
 
 Use an explicit rollout file when scripting or sharing a known thread:
 
@@ -32,30 +76,7 @@ Show more than the default 12 recent threads:
 cargo run --release -- --recent 20
 ```
 
-## Sharing options
-
-Conversation-only is the default. Grant only the extra information a viewer needs:
-
-```console
-cargo run --release -- --permission activity
-cargo run --release -- --permission diffs
-cargo run --release -- --permission activity-diffs
-```
-
 The viewer opens on the newest events, follows them while the viewer remains at the bottom, progressively loads older retained events near the top, and shows an in-thread working state during active turns. The retained window defaults to 2,000 normalized events and can be changed with `--history`.
-
-Use a tunnel to create a public link:
-
-```console
-cargo run --release -- --tunnel cloudflare
-cargo run --release -- --tunnel ngrok
-```
-
-Cloudflare Quick Tunnels need only `cloudflared` on your `PATH`. ngrok additionally needs an `NGROK_AUTHTOKEN` environment variable or an `authtoken:` entry in its normal configuration file. Check both providers before sharing:
-
-```console
-cargo run --release -- --check-tunnels
-```
 
 Add literal values that should always be masked:
 
@@ -80,11 +101,3 @@ Permissions are enforced by the server for both the snapshot and live WebSocket 
 Share tokens have 192 bits of entropy, live in the URL path, are checked by the local server, and expire when the process exits. The server binds to `127.0.0.1:48123` by default.
 
 This is defense in depth, not a guarantee that arbitrary prose contains no sensitive information. Review what the agent is discussing before sharing it.
-
-## Architecture direction
-
-`JsonlSource -> PublicEvent -> Masker -> SharedFeed -> HTTP/WebSocket`
-
-The next ingestion adapter should speak the versioned App Server protocol and emit the same `PublicEvent` values. App Server schemas should be generated from the installed Codex binary so the adapter stays aligned with that exact CLI version.
-
-The tunnel is isolated behind `ExposureProvider`; ngrok and Cloudflare Quick Tunnels are initial subprocess implementations.
